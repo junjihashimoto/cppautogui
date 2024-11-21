@@ -4,47 +4,43 @@
 Installation
 ============
 
-To install PyAutoGUI, install the `pyautogui` package from PyPI by running `pip install pyautogui` (on Windows) or `pip3 install pyautogui` (on macOS and Linux). (On macOS and Linux, `pip` refers to Python 2's pip tool.)
-
-OS-specific instructions are below.
+To install CppAutoGUI, follow the instructions below for your operating system.
 
 Windows
 -------
 
-On Windows, you can use the ``py.exe`` program to run the latest version of Python:
+On Windows, you can use CMake to build the project:
 
-    ``py -m pip install pyautogui``
-
-If you have multiple versions of Python installed, you can select which one with a command line argument to ``py``. For example, for Python 3.8, run:
-
-    ``py -3.8 -m pip install pyautogui``
-
-(This is the same as running ``pip install pyautogui``.)
+    ```sh
+    mkdir build
+    cd build
+    cmake ..
+    make
+    ```
 
 macOS
 -----
 
-On macOS and Linux, you need to run ``python3``:
+On macOS, you can use CMake to build the project. Make sure you have the Quartz framework installed:
 
-    ``python3 -m pip install pyautogui``
-
-If you are running El Capitan and have problems installing pyobjc try:
-
-    ``MACOSX_DEPLOYMENT_TARGET=10.11 pip install pyobjc``
+    ```sh
+    mkdir build
+    cd build
+    cmake ..
+    make
+    ```
 
 Linux
 -----
 
-On macOS and Linux, you need to run ``python3``:
+On Linux, you can use CMake to build the project. Make sure you have the X11 and XTest libraries installed:
 
-    ``python3 -m pip install pyautogui``
+    ```sh
+    sudo apt-get install libx11-dev libxtst-dev
+    mkdir build
+    cd build
+    cmake ..
+    make
+    ```
 
-On Linux, additionally you need to install the ``scrot`` application, as well as Tkinter:
-
-    ``sudo apt-get install scrot``
-
-    ``sudo apt-get install python3-tk``
-
-    ``sudo apt-get install python3-dev``
-
-PyAutoGUI install the modules it depends on, including PyTweening, PyScreeze, PyGetWindow, PymsgBox, and MouseInfo.
+CppAutoGUI will install the necessary modules it depends on, including the Quartz framework on macOS and the X11 and XTest libraries on Linux.
