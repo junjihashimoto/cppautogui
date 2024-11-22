@@ -364,21 +364,3 @@ public:
 #endif
     }
 };
-
-int main() {
-#ifdef __linux__
-    LinuxPlatform::initialize();
-#endif
-
-    try {
-        CppAutoGUI::moveTo(100, 100);
-        CppAutoGUI::click(100, 100, "left");
-        CppAutoGUI::scroll(3, 100, 100);
-        CppAutoGUI::keyDown("a");
-        CppAutoGUI::keyUp("a");
-    } catch (const CppAutoGUIException& e) {
-        std::cerr << "Error: " << e.what() << std::endl;
-    }
-
-    return 0;
-}
