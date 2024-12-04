@@ -2,6 +2,7 @@
 #include <stdexcept>
 #include <string>
 #include <tuple>
+#include "cppautogui_win.h"
 
 class CppAutoGUIException : public std::runtime_error {
 public:

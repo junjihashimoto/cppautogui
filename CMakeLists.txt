@@ -12,8 +12,15 @@ elseif(APPLE)
     find_library(QUARTZ_FRAMEWORK Quartz)
     find_library(COREFRAMEWORK CoreFoundation)
     find_library(COREGRAPHICS CoreGraphics)
+    
     include_directories(${CMAKE_SOURCE_DIR}/cppautogui)
     add_library(cppautogui STATIC cppautogui/cppautogui_osx.cpp cppautogui/cppautogui_osx.h cppautogui/cppautogui.cpp cppautogui/cppautogui.h)
+
+    target_link_libraries(cppautogui
+        "${QUARTZ_FRAMEWORK}"
+        "${COREFRAMEWORK}"
+        "${COREGRAPHICS}"
+    )
 elseif(UNIX)
     find_package(X11 REQUIRED)
     include_directories(${CMAKE_SOURCE_DIR}/cppautogui)
@@ -21,6 +28,19 @@ elseif(UNIX)
 endif()
 
 enable_testing()
+
 add_executable(test_cppautogui tests/test_cppautogui.cpp)
-target_link_libraries(test_cppautogui cppautogui)
+
+if(APPLE)
+    target_link_libraries(test_cppautogui
+        cppautogui
+        "${QUARTZ_FRAMEWORK}"
+        "${COREFRAMEWORK}"
+        "${COREGRAPHICS}"
+    )
+else()
+    target_link_libraries(test_cppautogui cppautogui)
+endif()
+
 add_test(NAME test_cppautogui COMMAND test_cppautogui)
+

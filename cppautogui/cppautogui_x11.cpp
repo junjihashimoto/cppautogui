@@ -7,6 +7,7 @@
 #include <map>
 #include <cstdlib>
 #include <unistd.h>
+#include "cppautogui_x11.h"
 
 class CppAutoGUIException : public std::runtime_error {
 public:
