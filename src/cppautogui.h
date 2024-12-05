@@ -99,6 +99,11 @@ public:
     static void scroll(int clicks, int x, int y);
     static void keyDown(const std::string& key);
     static void keyUp(const std::string& key);
+    static HBITMAP screenshot();
+    static std::tuple<int, int, int, int> locateOnScreen(const std::string& imagePath);
+    static std::tuple<int, int> locateCenterOnScreen(const std::string& imagePath);
+    static std::tuple<int, int, int> pixel(int x, int y);
+    static bool pixelMatchesColor(int x, int y, const std::tuple<int, int, int>& color, int tolerance = 0);
 };
 
 #endif // CPPAUTOGUI_H

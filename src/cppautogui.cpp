@@ -336,3 +336,98 @@ void CppAutoGUI::keyUp(const std::string& key) {
   LinuxPlatform::keyUp(key);
 #endif
 }
+
+#ifdef _WIN32
+HBITMAP screenshot() {
+  HDC hdcScreen = GetDC(NULL);
+  HDC hdcMemDC = CreateCompatibleDC(hdcScreen);
+  int width = GetSystemMetrics(SM_CXSCREEN);
+  int height = GetSystemMetrics(SM_CYSCREEN);
+  HBITMAP hBitmap = CreateCompatibleBitmap(hdcScreen, width, height);
+  SelectObject(hdcMemDC, hBitmap);
+  BitBlt(hdcMemDC, 0, 0, width, height, hdcScreen, 0, 0, SRCCOPY);
+  DeleteDC(hdcMemDC);
+  ReleaseDC(NULL, hdcScreen);
+  return hBitmap;
+}
+#elif __APPLE__
+CGImageRef screenshot() {
+  CGDirectDisplayID displayId = CGMainDisplayID();
+  return CGDisplayCreateImage(displayId);
+}
+#elif __linux__
+XImage* screenshot() {
+  Display* display = XOpenDisplay(NULL);
+  Window root = DefaultRootWindow(display);
+  XWindowAttributes attributes = {0};
+  XGetWindowAttributes(display, root, &attributes);
+  return XGetImage(display, root, 0, 0, attributes.width, attributes.height, AllPlanes, ZPixmap);
+}
+#endif
+
+#ifdef _WIN32
+std::tuple<int, int, int, int> locateOnScreen(const std::string& imagePath) {
+  // Implement Windows-specific code to locate an image on the screen
+  // Return (left, top, width, height) of the located image
+  return std::make_tuple(0, 0, 0, 0);
+}
+#elif __APPLE__
+std::tuple<int, int, int, int> locateOnScreen(const std::string& imagePath) {
+  // Implement macOS-specific code to locate an image on the screen
+  // Return (left, top, width, height) of the located image
+  return std::make_tuple(0, 0, 0, 0);
+}
+#elif __linux__
+std::tuple<int, int, int, int> locateOnScreen(const std::string& imagePath) {
+  // Implement Linux-specific code to locate an image on the screen
+  // Return (left, top, width, height) of the located image
+  return std::make_tuple(0, 0, 0, 0);
+}
+#endif
+
+std::tuple<int, int> locateCenterOnScreen(const std::string& imagePath) {
+  auto [left, top, width, height] = locateOnScreen(imagePath);
+  return std::make_tuple(left + width / 2, top + height / 2);
+}
+
+#ifdef _WIN32
+std::tuple<int, int, int> pixel(int x, int y) {
+  HDC hdcScreen = GetDC(NULL);
+  COLORREF color = GetPixel(hdcScreen, x, y);
+  ReleaseDC(NULL, hdcScreen);
+  return std::make_tuple(GetRValue(color), GetGValue(color), GetBValue(color));
+}
+#elif __APPLE__
+std::tuple<int, int, int> pixel(int x, int y) {
+  CGImageRef image = screenshot();
+  CFDataRef data = CGDataProviderCopyData(CGImageGetDataProvider(image));
+  const UInt8* buffer = CFDataGetBytePtr(data);
+  size_t bytesPerRow = CGImageGetBytesPerRow(image);
+  size_t bytesPerPixel = CGImageGetBitsPerPixel(image) / 8;
+  const UInt8* pixel = buffer + (y * bytesPerRow) + (x * bytesPerPixel);
+  int red = pixel[0];
+  int green = pixel[1];
+  int blue = pixel[2];
+  CFRelease(data);
+  CGImageRelease(image);
+  return std::make_tuple(red, green, blue);
+}
+#elif __linux__
+std::tuple<int, int, int> pixel(int x, int y) {
+  XImage* image = screenshot();
+  unsigned long pixel = XGetPixel(image, x, y);
+  int red = (pixel & image->red_mask) >> 16;
+  int green = (pixel & image->green_mask) >> 8;
+  int blue = pixel & image->blue_mask;
+  XDestroyImage(image);
+  return std::make_tuple(red, green, blue);
+}
+#endif
+
+bool pixelMatchesColor(int x, int y, const std::tuple<int, int, int>& color, int tolerance = 0) {
+  auto [red, green, blue] = pixel(x, y);
+  auto [targetRed, targetGreen, targetBlue] = color;
+  return std::abs(red - targetRed) <= tolerance &&
+         std::abs(green - targetGreen) <= tolerance &&
+         std::abs(blue - targetBlue) <= tolerance;
+}
