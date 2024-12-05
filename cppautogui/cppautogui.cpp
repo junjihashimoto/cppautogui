@@ -170,87 +170,81 @@ void MacOSPlatform::keyUp(const std::string& key) {
   CFRelease(event);
 }
 #elif __linux__
-class LinuxPlatform {
-public:
-    static Display* display;
-    static Window root;
+void LinuxPlatform::initialize() {
+  display = XOpenDisplay(NULL);
+  root = DefaultRootWindow(display);
+}
 
-    static void initialize() {
-        display = XOpenDisplay(NULL);
-        root = DefaultRootWindow(display);
-    }
+std::tuple<int, int> LinuxPlatform::getPosition() {
+  XEvent event;
+  XQueryPointer(display, root, &event.xbutton.root, &event.xbutton.window,
+		&event.xbutton.x_root, &event.xbutton.y_root,
+		&event.xbutton.x, &event.xbutton.y,
+		&event.xbutton.state);
+  return std::make_tuple(event.xbutton.x_root, event.xbutton.y_root);
+}
 
-    static std::tuple<int, int> getPosition() {
-        XEvent event;
-        XQueryPointer(display, root, &event.xbutton.root, &event.xbutton.window,
-                      &event.xbutton.x_root, &event.xbutton.y_root,
-                      &event.xbutton.x, &event.xbutton.y,
-                      &event.xbutton.state);
-        return std::make_tuple(event.xbutton.x_root, event.xbutton.y_root);
-    }
+std::tuple<int, int> LinuxPlatform::getSize() {
+  Screen* screen = DefaultScreenOfDisplay(display);
+  return std::make_tuple(screen->width, screen->height);
+}
 
-    static std::tuple<int, int> getSize() {
-        Screen* screen = DefaultScreenOfDisplay(display);
-        return std::make_tuple(screen->width, screen->height);
-    }
+void LinuxPlatform::moveTo(int x, int y) {
+  XWarpPointer(display, None, root, 0, 0, 0, 0, x, y);
+  XFlush(display);
+}
 
-    static void moveTo(int x, int y) {
-        XWarpPointer(display, None, root, 0, 0, 0, 0, x, y);
-        XFlush(display);
-    }
+void LinuxPlatform::mouseDown(int x, int y, const std::string& button) {
+  int buttonCode;
+  if (button == "left") {
+    buttonCode = Button1;
+  } else if (button == "middle") {
+    buttonCode = Button2;
+  } else if (button == "right") {
+    buttonCode = Button3;
+  }
+  XTestFakeButtonEvent(display, buttonCode, True, CurrentTime);
+  XFlush(display);
+}
 
-    static void mouseDown(int x, int y, const std::string& button) {
-        int buttonCode;
-        if (button == "left") {
-            buttonCode = Button1;
-        } else if (button == "middle") {
-            buttonCode = Button2;
-        } else if (button == "right") {
-            buttonCode = Button3;
-        }
-        XTestFakeButtonEvent(display, buttonCode, True, CurrentTime);
-        XFlush(display);
-    }
+void LinuxPlatform::mouseUp(int x, int y, const std::string& button) {
+  int buttonCode;
+  if (button == "left") {
+    buttonCode = Button1;
+  } else if (button == "middle") {
+    buttonCode = Button2;
+  } else if (button == "right") {
+    buttonCode = Button3;
+  }
+  XTestFakeButtonEvent(display, buttonCode, False, CurrentTime);
+  XFlush(display);
+}
 
-    static void mouseUp(int x, int y, const std::string& button) {
-        int buttonCode;
-        if (button == "left") {
-            buttonCode = Button1;
-        } else if (button == "middle") {
-            buttonCode = Button2;
-        } else if (button == "right") {
-            buttonCode = Button3;
-        }
-        XTestFakeButtonEvent(display, buttonCode, False, CurrentTime);
-        XFlush(display);
-    }
+void LinuxPlatform::click(int x, int y, const std::string& button) {
+  mouseDown(x, y, button);
+  mouseUp(x, y, button);
+}
 
-    static void click(int x, int y, const std::string& button) {
-        mouseDown(x, y, button);
-        mouseUp(x, y, button);
-    }
+void LinuxPlatform::scroll(int clicks, int x, int y) {
+  int buttonCode = (clicks > 0) ? Button4 : Button5;
+  for (int i = 0; i < std::abs(clicks); ++i) {
+    XTestFakeButtonEvent(display, buttonCode, True, CurrentTime);
+    XTestFakeButtonEvent(display, buttonCode, False, CurrentTime);
+  }
+  XFlush(display);
+}
 
-    static void scroll(int clicks, int x, int y) {
-        int buttonCode = (clicks > 0) ? Button4 : Button5;
-        for (int i = 0; i < std::abs(clicks); ++i) {
-            XTestFakeButtonEvent(display, buttonCode, True, CurrentTime);
-            XTestFakeButtonEvent(display, buttonCode, False, CurrentTime);
-        }
-        XFlush(display);
-    }
+void LinuxPlatform::keyDown(const std::string& key) {
+  KeyCode keyCode = XKeysymToKeycode(display, XStringToKeysym(key.c_str()));
+  XTestFakeKeyEvent(display, keyCode, True, CurrentTime);
+  XFlush(display);
+}
 
-    static void keyDown(const std::string& key) {
-        KeyCode keyCode = XKeysymToKeycode(display, XStringToKeysym(key.c_str()));
-        XTestFakeKeyEvent(display, keyCode, True, CurrentTime);
-        XFlush(display);
-    }
-
-    static void keyUp(const std::string& key) {
-        KeyCode keyCode = XKeysymToKeycode(display, XStringToKeysym(key.c_str()));
-        XTestFakeKeyEvent(display, keyCode, False, CurrentTime);
-        XFlush(display);
-    }
-};
+void LinuxPlatform::keyUp(const std::string& key) {
+  KeyCode keyCode = XKeysymToKeycode(display, XStringToKeysym(key.c_str()));
+  XTestFakeKeyEvent(display, keyCode, False, CurrentTime);
+  XFlush(display);
+}
 
 Display* LinuxPlatform::display = nullptr;
 Window LinuxPlatform::root = 0;
