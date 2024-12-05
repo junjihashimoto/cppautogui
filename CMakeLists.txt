@@ -6,16 +6,16 @@ set(CMAKE_CXX_STANDARD 11)
 
 if(WIN32)
     add_definitions(-D_CRT_SECURE_NO_WARNINGS)
-    include_directories(${CMAKE_SOURCE_DIR}/cppautogui)
-    add_library(cppautogui STATIC cppautogui/cppautogui_win.cpp cppautogui/cppautogui_win.h cppautogui/cppautogui.cpp cppautogui/cppautogui.h)
+    include_directories(${CMAKE_SOURCE_DIR}/src)
+    add_library(cppautogui STATIC src/cppautogui.cpp src/cppautogui.h)
 
 elseif(APPLE)
     find_library(QUARTZ_FRAMEWORK Quartz)
     find_library(COREFRAMEWORK CoreFoundation)
     find_library(COREGRAPHICS CoreGraphics)
 
-    include_directories(${CMAKE_SOURCE_DIR}/cppautogui)
-    add_library(cppautogui STATIC cppautogui/cppautogui_osx.cpp cppautogui/cppautogui_osx.h cppautogui/cppautogui.cpp cppautogui/cppautogui.h)
+    include_directories(${CMAKE_SOURCE_DIR}/src)
+    add_library(cppautogui STATIC src/cppautogui.cpp src/cppautogui.h)
 
     target_link_libraries(cppautogui
         "${QUARTZ_FRAMEWORK}"
@@ -28,9 +28,9 @@ elseif(UNIX)
     find_library(XTEST_LIB Xtst)
 
     include_directories(${X11_INCLUDE_DIR})
-    include_directories(${CMAKE_SOURCE_DIR}/cppautogui)
+    include_directories(${CMAKE_SOURCE_DIR}/src)
 
-    add_library(cppautogui STATIC cppautogui/cppautogui_x11.cpp cppautogui/cppautogui_x11.h cppautogui/cppautogui.cpp cppautogui/cppautogui.h)
+    add_library(cppautogui STATIC src/cppautogui.cpp src/cppautogui.h)
 
     target_link_libraries(cppautogui
         ${X11_LIBRARIES}
