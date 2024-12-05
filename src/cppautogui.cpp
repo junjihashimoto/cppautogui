@@ -28,78 +28,75 @@
 #include "cppautogui.h"
 
 #ifdef _WIN32
-class WindowsPlatform {
-public:
-    static std::tuple<int, int> getPosition() {
-        POINT p;
-        if (GetCursorPos(&p)) {
-            return std::make_tuple(p.x, p.y);
-        }
-        throw CppAutoGUIException("Failed to get cursor position");
-    }
+std::tuple<int, int> WindowsPlatform::getPosition() {
+  POINT p;
+  if (GetCursorPos(&p)) {
+    return std::make_tuple(p.x, p.y);
+  }
+  throw CppAutoGUIException("Failed to get cursor position");
+}
 
-    static std::tuple<int, int> getSize() {
-        return std::make_tuple(GetSystemMetrics(SM_CXSCREEN), GetSystemMetrics(SM_CYSCREEN));
-    }
+std::tuple<int, int> WindowsPlatform::getSize() {
+  return std::make_tuple(GetSystemMetrics(SM_CXSCREEN), GetSystemMetrics(SM_CYSCREEN));
+}
 
-    static void moveTo(int x, int y) {
-        SetCursorPos(x, y);
-    }
+void WindowsPlatform::moveTo(int x, int y) {
+  SetCursorPos(x, y);
+}
 
-    static void mouseDown(int x, int y, const std::string& button) {
-        INPUT input = {0};
-        input.type = INPUT_MOUSE;
-        if (button == "left") {
-            input.mi.dwFlags = MOUSEEVENTF_LEFTDOWN;
-        } else if (button == "middle") {
-            input.mi.dwFlags = MOUSEEVENTF_MIDDLEDOWN;
-        } else if (button == "right") {
-            input.mi.dwFlags = MOUSEEVENTF_RIGHTDOWN;
-        }
-        SendInput(1, &input, sizeof(INPUT));
-    }
+void WindowsPlatform::mouseDown(int x, int y, const std::string& button) {
+  INPUT input = {0};
+  input.type = INPUT_MOUSE;
+  if (button == "left") {
+    input.mi.dwFlags = MOUSEEVENTF_LEFTDOWN;
+  } else if (button == "middle") {
+    input.mi.dwFlags = MOUSEEVENTF_MIDDLEDOWN;
+  } else if (button == "right") {
+    input.mi.dwFlags = MOUSEEVENTF_RIGHTDOWN;
+  }
+  SendInput(1, &input, sizeof(INPUT));
+}
 
-    static void mouseUp(int x, int y, const std::string& button) {
-        INPUT input = {0};
-        input.type = INPUT_MOUSE;
-        if (button == "left") {
-            input.mi.dwFlags = MOUSEEVENTF_LEFTUP;
-        } else if (button == "middle") {
-            input.mi.dwFlags = MOUSEEVENTF_MIDDLEUP;
-        } else if (button == "right") {
-            input.mi.dwFlags = MOUSEEVENTF_RIGHTUP;
-        }
-        SendInput(1, &input, sizeof(INPUT));
-    }
+void WindowsPlatform::mouseUp(int x, int y, const std::string& button) {
+  INPUT input = {0};
+  input.type = INPUT_MOUSE;
+  if (button == "left") {
+    input.mi.dwFlags = MOUSEEVENTF_LEFTUP;
+  } else if (button == "middle") {
+    input.mi.dwFlags = MOUSEEVENTF_MIDDLEUP;
+  } else if (button == "right") {
+    input.mi.dwFlags = MOUSEEVENTF_RIGHTUP;
+  }
+  SendInput(1, &input, sizeof(INPUT));
+}
 
-    static void click(int x, int y, const std::string& button) {
-        mouseDown(x, y, button);
-        mouseUp(x, y, button);
-    }
+void WindowsPlatform::click(int x, int y, const std::string& button) {
+  mouseDown(x, y, button);
+  mouseUp(x, y, button);
+}
 
-    static void scroll(int clicks, int x, int y) {
-        INPUT input = {0};
-        input.type = INPUT_MOUSE;
-        input.mi.dwFlags = MOUSEEVENTF_WHEEL;
-        input.mi.mouseData = clicks * WHEEL_DELTA;
-        SendInput(1, &input, sizeof(INPUT));
-    }
+void WindowsPlatform::scroll(int clicks, int x, int y) {
+  INPUT input = {0};
+  input.type = INPUT_MOUSE;
+  input.mi.dwFlags = MOUSEEVENTF_WHEEL;
+  input.mi.mouseData = clicks * WHEEL_DELTA;
+  SendInput(1, &input, sizeof(INPUT));
+}
 
-    static void keyDown(const std::string& key) {
-        INPUT input = {0};
-        input.type = INPUT_KEYBOARD;
-        input.ki.wVk = VkKeyScan(key[0]);
-        SendInput(1, &input, sizeof(INPUT));
-    }
+void WindowsPlatform::keyDown(const std::string& key) {
+  INPUT input = {0};
+  input.type = INPUT_KEYBOARD;
+  input.ki.wVk = VkKeyScan(key[0]);
+  SendInput(1, &input, sizeof(INPUT));
+}
 
-    static void keyUp(const std::string& key) {
-        INPUT input = {0};
-        input.type = INPUT_KEYBOARD;
-        input.ki.wVk = VkKeyScan(key[0]);
-        input.ki.dwFlags = KEYEVENTF_KEYUP;
-        SendInput(1, &input, sizeof(INPUT));
-    }
-};
+void WindowsPlatform::keyUp(const std::string& key) {
+  INPUT input = {0};
+  input.type = INPUT_KEYBOARD;
+  input.ki.wVk = VkKeyScan(key[0]);
+  input.ki.dwFlags = KEYEVENTF_KEYUP;
+  SendInput(1, &input, sizeof(INPUT));
+}
 #elif __APPLE__
 std::tuple<int, int> MacOSPlatform::getPosition() {
   CGEventRef event = CGEventCreate(NULL);
@@ -125,7 +122,7 @@ void MacOSPlatform::mouseDown(int x, int y, const std::string& button) {
     eventType = kCGEventLeftMouseDown;
   } else if (button == "middle") {
     eventType = kCGEventOtherMouseDown;
-  } else if (button == "right") {
+	  } else if (button == "right") {
     eventType = kCGEventRightMouseDown;
   }
   CGEventRef event = CGEventCreateMouseEvent(NULL, eventType, CGPointMake(x, y), kCGMouseButtonLeft);
@@ -252,90 +249,90 @@ Window LinuxPlatform::root = 0;
 
 std::tuple<int, int> CppAutoGUI::getPosition() {
 #ifdef _WIN32
-        return WindowsPlatform::getPosition();
+  return WindowsPlatform::getPosition();
 #elif __APPLE__
-        return MacOSPlatform::getPosition();
+  return MacOSPlatform::getPosition();
 #elif __linux__
-        return LinuxPlatform::getPosition();
+  return LinuxPlatform::getPosition();
 #endif
-    }
+}
 
 std::tuple<int, int> CppAutoGUI::getSize() {
 #ifdef _WIN32
-        return WindowsPlatform::getSize();
+  return WindowsPlatform::getSize();
 #elif __APPLE__
-        return MacOSPlatform::getSize();
+  return MacOSPlatform::getSize();
 #elif __linux__
-        return LinuxPlatform::getSize();
+  return LinuxPlatform::getSize();
 #endif
-    }
+}
 
 void CppAutoGUI::moveTo(int x, int y) {
 #ifdef _WIN32
-        WindowsPlatform::moveTo(x, y);
+  WindowsPlatform::moveTo(x, y);
 #elif __APPLE__
-        MacOSPlatform::moveTo(x, y);
+  MacOSPlatform::moveTo(x, y);
 #elif __linux__
-        LinuxPlatform::moveTo(x, y);
+  LinuxPlatform::moveTo(x, y);
 #endif
-    }
+}
 
 void CppAutoGUI::mouseDown(int x, int y, const std::string& button) {
 #ifdef _WIN32
-        WindowsPlatform::mouseDown(x, y, button);
+  WindowsPlatform::mouseDown(x, y, button);
 #elif __APPLE__
-        MacOSPlatform::mouseDown(x, y, button);
+  MacOSPlatform::mouseDown(x, y, button);
 #elif __linux__
-        LinuxPlatform::mouseDown(x, y, button);
+  LinuxPlatform::mouseDown(x, y, button);
 #endif
-    }
+}
 
 void CppAutoGUI::mouseUp(int x, int y, const std::string& button) {
 #ifdef _WIN32
-        WindowsPlatform::mouseUp(x, y, button);
+  WindowsPlatform::mouseUp(x, y, button);
 #elif __APPLE__
-        MacOSPlatform::mouseUp(x, y, button);
+  MacOSPlatform::mouseUp(x, y, button);
 #elif __linux__
-        LinuxPlatform::mouseUp(x, y, button);
+  LinuxPlatform::mouseUp(x, y, button);
 #endif
-    }
+}
 
 void CppAutoGUI::click(int x, int y, const std::string& button) {
 #ifdef _WIN32
-        WindowsPlatform::click(x, y, button);
+  WindowsPlatform::click(x, y, button);
 #elif __APPLE__
-        MacOSPlatform::click(x, y, button);
+  MacOSPlatform::click(x, y, button);
 #elif __linux__
-        LinuxPlatform::click(x, y, button);
+  LinuxPlatform::click(x, y, button);
 #endif
-    }
+}
 
 void CppAutoGUI::scroll(int clicks, int x, int y) {
 #ifdef _WIN32
-        WindowsPlatform::scroll(clicks, x, y);
+  WindowsPlatform::scroll(clicks, x, y);
 #elif __APPLE__
-        MacOSPlatform::scroll(clicks, x, y);
+  MacOSPlatform::scroll(clicks, x, y);
 #elif __linux__
-        LinuxPlatform::scroll(clicks, x, y);
+  LinuxPlatform::scroll(clicks, x, y);
 #endif
-    }
+}
 
 void CppAutoGUI::keyDown(const std::string& key) {
 #ifdef _WIN32
-        WindowsPlatform::keyDown(key);
+  WindowsPlatform::keyDown(key);
 #elif __APPLE__
-        MacOSPlatform::keyDown(key);
+  MacOSPlatform::keyDown(key);
 #elif __linux__
-        LinuxPlatform::keyDown(key);
+  LinuxPlatform::keyDown(key);
 #endif
-    }
+}
 
 void CppAutoGUI::keyUp(const std::string& key) {
 #ifdef _WIN32
-        WindowsPlatform::keyUp(key);
+  WindowsPlatform::keyUp(key);
 #elif __APPLE__
-        MacOSPlatform::keyUp(key);
+  MacOSPlatform::keyUp(key);
 #elif __linux__
-        LinuxPlatform::keyUp(key);
+  LinuxPlatform::keyUp(key);
 #endif
-    }
+}
