@@ -26,6 +26,52 @@
 #endif
 
 #include "cppautogui.h"
+#include "cppautogui.h"
+
+#ifdef _WIN32
+class WindowsPlatform {
+public:
+    static std::tuple<int, int> getPosition();
+    static std::tuple<int, int> getSize();
+    static void moveTo(int x, int y);
+    static void mouseDown(int x, int y, const std::string& button);
+    static void mouseUp(int x, int y, const std::string& button);
+    static void click(int x, int y, const std::string& button);
+    static void scroll(int clicks, int x, int y);
+    static void keyDown(const std::string& key);
+    static void keyUp(const std::string& key);
+};
+#elif __APPLE__
+class MacOSPlatform {
+public:
+    static std::tuple<int, int> getPosition();
+    static std::tuple<int, int> getSize();
+    static void moveTo(int x, int y);
+    static void mouseDown(int x, int y, const std::string& button);
+    static void mouseUp(int x, int y, const std::string& button);
+    static void click(int x, int y, const std::string& button);
+    static void scroll(int clicks, int x, int y);
+    static void keyDown(const std::string& key);
+    static void keyUp(const std::string& key);
+};
+#elif __linux__
+class LinuxPlatform {
+public:
+    static Display* display;
+    static Window root;
+
+    static void initialize();
+    static std::tuple<int, int> getPosition();
+    static std::tuple<int, int> getSize();
+    static void moveTo(int x, int y);
+    static void mouseDown(int x, int y, const std::string& button);
+    static void mouseUp(int x, int y, const std::string& button);
+    static void click(int x, int y, const std::string& button);
+    static void scroll(int clicks, int x, int y);
+    static void keyDown(const std::string& key);
+    static void keyUp(const std::string& key);
+};
+#endif
 
 #ifdef _WIN32
 std::tuple<int, int> WindowsPlatform::getPosition() {
@@ -338,7 +384,29 @@ void CppAutoGUI::keyUp(const std::string& key) {
 }
 
 #ifdef _WIN32
-HBITMAP screenshot() {
+
+void hbitmap2image(HBITMAP hBitmap, BITMAP& bitmap, BYTE*& bits) {
+  GetObject(hBitmap, sizeof(BITMAP), &bitmap);
+  BITMAPINFOHEADER bi = {0};
+  bi.biSize = sizeof(BITMAPINFOHEADER);
+  bi.biWidth = bitmap.bmWidth;
+  bi.biHeight = bitmap.bmHeight;
+  bi.biPlanes = 1;
+  bi.biBitCount = 32;
+  bi.biCompression = BI_RGB;
+  bi.biSizeImage = 0;
+  bi.biXPelsPerMeter = 0;
+  bi.biYPelsPerMeter = 0;
+  bi.biClrUsed = 0;
+  bi.biClrImportant = 0;
+  HDC hdc = GetDC(NULL);
+  GetDIBits(hdc, hBitmap, 0, bitmap.bmHeight, NULL, reinterpret_cast<BITMAPINFO*>(&bi), DIB_RGB_COLORS);
+  bits = new BYTE[bi.biSizeImage];
+  GetDIBits(hdc, hBitmap, 0, bitmap.bmHeight, bits, reinterpret_cast<BITMAPINFO*>(&bi), DIB_RGB_COLORS);
+  DeleteDC(hdc);
+}
+
+std::shared_ptr<image> CppAutoGUI::screenshot() {
   HDC hdcScreen = GetDC(NULL);
   HDC hdcMemDC = CreateCompatibleDC(hdcScreen);
   int width = GetSystemMetrics(SM_CXSCREEN);
@@ -348,83 +416,168 @@ HBITMAP screenshot() {
   BitBlt(hdcMemDC, 0, 0, width, height, hdcScreen, 0, 0, SRCCOPY);
   DeleteDC(hdcMemDC);
   ReleaseDC(NULL, hdcScreen);
-  return hBitmap;
+  HBITMAP bmp = hBitmap;
+  std::shared_ptr<image> img(new image, [](image* img) {
+    image_free(img);
+    delete img;
+  });
+  image_init(*img, width, height);
+  // Convert HBITMAP to image
+  BITMAP bitmap = {0};
+  BYTE* bits = nullptr;
+  hbitmap2image(bmp, bitmap, bits);
+  for (int y = 0; y < height; ++y) {
+    for (int x = 0; x < width; ++x) {
+      int i = y * width + x;
+      int j = (height - y - 1) * width + x;
+      (*img)[y][x].r = bits[i * 4 + 2];
+      (*img)[y][x].g = bits[i * 4 + 1];
+      (*img)[y][x].b = bits[i * 4];
+      (*img)[y][x].alpha = bits[i * 4 + 3];
+    }
+  }
+  delete[] bits;
+  return img;
 }
+
 #elif __APPLE__
-CGImageRef screenshot() {
-  CGDirectDisplayID displayId = CGMainDisplayID();
-  return CGDisplayCreateImage(displayId);
+void cgimage2bitmap(CGImageRef image, size_t& width, size_t& height, size_t& bytesPerRow, size_t& bytesPerPixel, UInt8*& buffer) {
+  width = CGImageGetWidth(image);
+  height = CGImageGetHeight(image);
+  bytesPerRow = CGImageGetBytesPerRow(image);
+  bytesPerPixel = CGImageGetBitsPerPixel(image) / 8;
+  buffer = new UInt8[bytesPerRow * height];
+  CGColorSpaceRef colorSpace = CGColorSpaceCreateDeviceRGB();
+  CGContextRef context = CGBitmapContextCreate(buffer, width, height, 8, bytesPerRow, colorSpace, kCGImageAlphaPremultipliedFirst);
+  CGContextDrawImage(context, CGRectMake(0, 0, width, height), image);
+  CGContextRelease(context);
+  CGColorSpaceRelease(colorSpace);
 }
+
+std::shared_ptr<image> CppAutoGUI::screenshot() {
+  CGDirectDisplayID displayId = CGMainDisplayID();
+  CGImageRef bmp = CGDisplayCreateImage(displayId);
+  std::shared_ptr<image> img(new image, [](image* img) {
+    image_free(*img);
+    delete img;
+  });
+  size_t width, height, bytesPerRow, bytesPerPixel;
+  UInt8* buffer = nullptr;
+  cgimage2bitmap(bmp, width, height, bytesPerRow, bytesPerPixel, buffer);
+  image_init(*img, width, height);
+  for (size_t y = 0; y < height; ++y) {
+    for (size_t x = 0; x < width; ++x) {
+      size_t i = y * width + x;
+      size_t j = (height - y - 1) * width + x;
+      (*img)[y][x].r = buffer[i * bytesPerPixel + 2];
+      (*img)[y][x].g = buffer[i * bytesPerPixel + 1];
+      (*img)[y][x].b = buffer[i * bytesPerPixel];
+      (*img)[y][x].alpha = buffer[i * bytesPerPixel + 3];
+    }
+  }
+  delete[] buffer;
+  CGImageRelease(bmp);
+  return img;
+}
+
 #elif __linux__
-XImage* screenshot() {
+void ximage2bitmap(XImage* image, size_t& width, size_t& height, size_t& bytesPerRow, size_t& bytesPerPixel, unsigned char*& buffer) {
+  width = image->width;
+  height = image->height;
+  bytesPerRow = image->bytes_per_line;
+  bytesPerPixel = image->bits_per_pixel / 8;
+  buffer = new unsigned char[bytesPerRow * height];
+  memcpy(buffer, image->data, bytesPerRow * height);
+}
+
+std::shared_ptr<image> CppAutoGUI::screenshot() {
   Display* display = XOpenDisplay(NULL);
   Window root = DefaultRootWindow(display);
   XWindowAttributes attributes = {0};
   XGetWindowAttributes(display, root, &attributes);
-  return XGetImage(display, root, 0, 0, attributes.width, attributes.height, AllPlanes, ZPixmap);
+  XImage* bmp = XGetImage(display, root, 0, 0, attributes.width, attributes.height, AllPlanes, ZPixmap);
+  std::shared_ptr<image> img(new image, [](image* img) {
+    image_free(img);
+    delete img;
+  });
+  size_t width, height, bytesPerRow, bytesPerPixel;
+  unsigned char* buffer = nullptr;
+  ximage2bitmap(bmp, width, height, bytesPerRow, bytesPerPixel, buffer);
+  image_init(*img, width, height);
+  for (size_t y = 0; y < height; ++y) {
+    for (size_t x = 0; x < width; ++x) {
+      size_t i = y * width + x;
+      size_t j = (height - y - 1) * width + x;
+      (*img)[y][x].r = buffer[i * bytesPerPixel + 2];
+      (*img)[y][x].g = buffer[i * bytesPerPixel + 1];
+      (*img)[y][x].b = buffer[i * bytesPerPixel];
+      (*img)[y][x].alpha = 0;
+    }
+  }
+  delete[] buffer;
+  XDestroyImage(bmp);
+  XCloseDisplay(display);
+  return img;
 }
+
 #endif
 
-#ifdef _WIN32
-std::tuple<int, int, int, int> locateOnScreen(const std::string& imagePath) {
+std::tuple<int, int, int, int> CppAutoGUI::locateOnScreen(const std::string& imagePath) {
   // Implement Windows-specific code to locate an image on the screen
   // Return (left, top, width, height) of the located image
-  return std::make_tuple(0, 0, 0, 0);
-}
-#elif __APPLE__
-std::tuple<int, int, int, int> locateOnScreen(const std::string& imagePath) {
-  // Implement macOS-specific code to locate an image on the screen
-  // Return (left, top, width, height) of the located image
-  return std::make_tuple(0, 0, 0, 0);
-}
-#elif __linux__
-std::tuple<int, int, int, int> locateOnScreen(const std::string& imagePath) {
-  // Implement Linux-specific code to locate an image on the screen
-  // Return (left, top, width, height) of the located image
-  return std::make_tuple(0, 0, 0, 0);
-}
-#endif
+  image img;
+  ::data data;
+  data_load(data,imagePath.c_str());
+  //Check the suffix of the image path
+  std::string suffix = imagePath.substr(imagePath.find_last_of(".") + 1);
+  if (suffix == "bmp") {
+    bmp2image(data, img);
+  } else if (suffix == "png") {
+    png2image(data, img);
+  } else if (suffix == "jpg" || suffix == "jpeg") {
+    jpeg2image(data, img);
+  } else {
+    throw CppAutoGUIException("Unsupported image format");
+  }
 
-std::tuple<int, int> locateCenterOnScreen(const std::string& imagePath) {
+  std::shared_ptr<image> screen = screenshot();
+  int width = screen->width - img.width + 1;
+  int height = screen->height - img.height + 1;
+  for (int y = 0; y < height; ++y) {
+    for (int x = 0; x < width; ++x) {
+      bool found = true;
+      for (int i = 0; i < img.height; ++i) {
+        for (int j = 0; j < img.width; ++j) {
+          if ((*screen)[y + i][x + j].r != img[i][j].r ||
+              (*screen)[y + i][x + j].g != img[i][j].g ||
+              (*screen)[y + i][x + j].b != img[i][j].b) {
+            found = false;
+            break;
+          }
+        }
+        if (!found) {
+          break;
+        }
+      }
+      if (found) {
+        return std::make_tuple(x, y, img.width, img.height);
+      }
+    }
+  }
+  return std::make_tuple(0, 0, 0, 0);
+}
+
+std::tuple<int, int> CppAutoGUI::locateCenterOnScreen(const std::string& imagePath) {
   auto [left, top, width, height] = locateOnScreen(imagePath);
   return std::make_tuple(left + width / 2, top + height / 2);
 }
 
-#ifdef _WIN32
-std::tuple<int, int, int> pixel(int x, int y) {
-  HDC hdcScreen = GetDC(NULL);
-  COLORREF color = GetPixel(hdcScreen, x, y);
-  ReleaseDC(NULL, hdcScreen);
-  return std::make_tuple(GetRValue(color), GetGValue(color), GetBValue(color));
+std::tuple<int, int, int> CppAutoGUI::pixel(int x, int y) {
+  auto image = CppAutoGUI::screenshot();
+  return std::make_tuple((*image)[y][x].r, (*image)[y][x].g, (*image)[y][x].b);
 }
-#elif __APPLE__
-std::tuple<int, int, int> pixel(int x, int y) {
-  CGImageRef image = screenshot();
-  CFDataRef data = CGDataProviderCopyData(CGImageGetDataProvider(image));
-  const UInt8* buffer = CFDataGetBytePtr(data);
-  size_t bytesPerRow = CGImageGetBytesPerRow(image);
-  size_t bytesPerPixel = CGImageGetBitsPerPixel(image) / 8;
-  const UInt8* pixel = buffer + (y * bytesPerRow) + (x * bytesPerPixel);
-  int red = pixel[0];
-  int green = pixel[1];
-  int blue = pixel[2];
-  CFRelease(data);
-  CGImageRelease(image);
-  return std::make_tuple(red, green, blue);
-}
-#elif __linux__
-std::tuple<int, int, int> pixel(int x, int y) {
-  XImage* image = screenshot();
-  unsigned long pixel = XGetPixel(image, x, y);
-  int red = (pixel & image->red_mask) >> 16;
-  int green = (pixel & image->green_mask) >> 8;
-  int blue = pixel & image->blue_mask;
-  XDestroyImage(image);
-  return std::make_tuple(red, green, blue);
-}
-#endif
 
-bool pixelMatchesColor(int x, int y, const std::tuple<int, int, int>& color, int tolerance = 0) {
+bool CppAutoGUI::pixelMatchesColor(int x, int y, const std::tuple<int, int, int>& color, int tolerance) {
   auto [red, green, blue] = pixel(x, y);
   auto [targetRed, targetGreen, targetBlue] = color;
   return std::abs(red - targetRed) <= tolerance &&

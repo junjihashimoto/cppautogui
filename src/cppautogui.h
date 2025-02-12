@@ -28,6 +28,8 @@
 #include <X11/extensions/XTest.h>
 #endif
 
+#include "image.h"
+
 class CppAutoGUIException : public std::runtime_error {
 public:
     explicit CppAutoGUIException(const std::string& message) : std::runtime_error(message) {}
@@ -43,51 +45,6 @@ public:
     explicit ImageNotFoundException(const std::string& message) : CppAutoGUIException(message) {}
 };
 
-#ifdef _WIN32
-class WindowsPlatform {
-public:
-    static std::tuple<int, int> getPosition();
-    static std::tuple<int, int> getSize();
-    static void moveTo(int x, int y);
-    static void mouseDown(int x, int y, const std::string& button);
-    static void mouseUp(int x, int y, const std::string& button);
-    static void click(int x, int y, const std::string& button);
-    static void scroll(int clicks, int x, int y);
-    static void keyDown(const std::string& key);
-    static void keyUp(const std::string& key);
-};
-#elif __APPLE__
-class MacOSPlatform {
-public:
-    static std::tuple<int, int> getPosition();
-    static std::tuple<int, int> getSize();
-    static void moveTo(int x, int y);
-    static void mouseDown(int x, int y, const std::string& button);
-    static void mouseUp(int x, int y, const std::string& button);
-    static void click(int x, int y, const std::string& button);
-    static void scroll(int clicks, int x, int y);
-    static void keyDown(const std::string& key);
-    static void keyUp(const std::string& key);
-};
-#elif __linux__
-class LinuxPlatform {
-public:
-    static Display* display;
-    static Window root;
-
-    static void initialize();
-    static std::tuple<int, int> getPosition();
-    static std::tuple<int, int> getSize();
-    static void moveTo(int x, int y);
-    static void mouseDown(int x, int y, const std::string& button);
-    static void mouseUp(int x, int y, const std::string& button);
-    static void click(int x, int y, const std::string& button);
-    static void scroll(int clicks, int x, int y);
-    static void keyDown(const std::string& key);
-    static void keyUp(const std::string& key);
-};
-#endif
-
 class CppAutoGUI {
 public:
     static std::tuple<int, int> getPosition();
@@ -99,7 +56,7 @@ public:
     static void scroll(int clicks, int x, int y);
     static void keyDown(const std::string& key);
     static void keyUp(const std::string& key);
-    static HBITMAP screenshot();
+    static std::shared_ptr<image> screenshot();
     static std::tuple<int, int, int, int> locateOnScreen(const std::string& imagePath);
     static std::tuple<int, int> locateCenterOnScreen(const std::string& imagePath);
     static std::tuple<int, int, int> pixel(int x, int y);
