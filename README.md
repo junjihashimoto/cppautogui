@@ -12,6 +12,13 @@ cmake ..
 make
 ```
 
+To build the Haskell bindings, use Stack:
+
+```sh
+cd bindings/haskell
+stack build
+```
+
 Full documentation available at https://cppautogui.readthedocs.org
 
 Source code available at https://github.com/junjihashimoto/cppautogui
@@ -63,6 +70,31 @@ int main() {
 
     return 0;
 }
+```
+
+Haskell Example Usage
+---------------------
+
+To use the Haskell bindings, first build the project using Stack as described above. Then, you can use the following example code:
+
+```haskell
+import qualified Graphics.UI.AutoGUI as AG
+
+main :: IO ()
+main = do
+  AG.moveTo 100 150 -- Move the mouse to the x, y coordinates 100, 150.
+  AG.click 100 150 "left" -- Click the mouse at the x, y coordinates 100, 150.
+  AG.moveTo 200 220 -- Move the mouse to the x, y coordinates 200, 220.
+  AG.click 200 220 "left" -- Click the mouse at the x, y coordinates 200, 220.
+  AG.move 0 10 -- Move mouse 10 pixels down, that is, move the mouse relative to its current position.
+  AG.doubleClick 500 500 "left" -- Double click the mouse at the x, y coordinates 500, 500.
+  AG.moveTo 500 500 2 AG.easeInOutQuad -- Use tweening/easing function to move mouse over 2 seconds.
+  AG.write "Hello world!" 0.25 -- Type with quarter-second pause in between each key.
+  AG.press "esc" -- Simulate pressing the Escape key.
+  AG.keyDown "shift"
+  AG.write ["left", "left", "left", "left", "left", "left"]
+  AG.keyUp "shift"
+  AG.hotkey ["ctrl", "c"]
 ```
 
 Screenshot Functions
