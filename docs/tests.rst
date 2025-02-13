@@ -4,7 +4,7 @@
 Testing
 =======
 
-The unit tests for PyAutoGUI are currently not comprehensive. The tests (in basicTests.py) cover the following:
+The unit tests for CppAutoGUI are currently not comprehensive. The tests (in basicTests.cpp) cover the following:
 
 - onScreen()
 - size()
@@ -17,13 +17,9 @@ The unit tests for PyAutoGUI are currently not comprehensive. The tests (in basi
 Platforms Tested
 ================
 
-- Python 3.4, 3.3, 3.2, 3.1, 2.7, 2.6, 2.5
+- C++17
 - Windows
-- OS X
-- Raspberry Pi
-
-(If you have run the unit tests successfully on other platforms, please tell al@inventwithpython.com.)
-
-PyAutoGUI is not compatible with Python 2.4 or before.
+- macOS
+- Linux
 
 The keyboard functions do not work on Ubuntu when run in VirtualBox on Windows.

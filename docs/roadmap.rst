@@ -1,11 +1,10 @@
-
 =======
 Roadmap
 =======
 
-PyAutoGUI is planned as a replacement for other Python GUI automation scripts, such as PyUserInput, PyKeyboard, PyMouse, pykey, etc. Eventually it would be great to offer the same type of features that Sikuli_ offers.
+CppAutoGUI is planned as a replacement for other C++ GUI automation scripts. Eventually it would be great to offer the same type of features that Sikuli_ offers.
 
-For now, the primary aim for PyAutoGUI is cross-platform mouse and keyboard control and a simple API.
+For now, the primary aim for CppAutoGUI is cross-platform mouse and keyboard control and a simple API.
 
 Future features planned (specific versions not planned yet):
 
@@ -18,16 +17,16 @@ Future features planned (specific versions not planned yet):
 - Make it easier to work on systems with multiple monitors.
 - GetKeyState() type of function
 - Ability to set global hotkey on all platforms so that there can be an easy "kill switch" for GUI automation programs.
-- Optional nonblocking pyautogui calls.
+- Optional nonblocking CppAutoGUI calls.
 - "strict" mode for keyboard - passing an invalid keyboard key causes an exception instead of silently skipping it.
 - rename keyboardMapping to KEYBOARD_MAPPING
-- Ability to convert png and other image files into a string that can be copy/pasted directly in the source code, so that they don't have to be shared separately with people's pyautogui scripts.
-- Test to make sure pyautogui works in Windows/mac/linux VMs.
+- Ability to convert png and other image files into a string that can be copy/pasted directly in the source code, so that they don't have to be shared separately with people's CppAutoGUI scripts.
+- Test to make sure CppAutoGUI works in Windows/mac/linux VMs.
 - A way to compare two images and highlight differences between them (good for pointing out when a UI changes, etc.)
 
 Window handling features:
- - pyautogui.getWindows()      # returns a dict of window titles mapped to window IDs
- - pyautogui.getWindow(str_title_or_int_id)   # returns a "Win" object
+ - CppAutoGUI::getWindows()      # returns a dict of window titles mapped to window IDs
+ - CppAutoGUI::getWindow(str_title_or_int_id)   # returns a "Win" object
  - win.move(x, y)
  - win.resize(width, height)
  - win.maximize()
